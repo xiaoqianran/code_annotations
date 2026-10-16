@@ -11,6 +11,7 @@ from urllib.parse import urlparse
 
 from .analyzer import Index
 from .editor import diff, edit, apply_batch
+from .tree import HTML as TREE_PAGE, operation as tree_operation
 
 _PAGE = r"""<!doctype html>
 <html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -36,7 +37,7 @@ pre{white-space:pre;overflow:auto;max-height:400px;border-radius:9px;background:
 .empty{color:#94a3b8;font-size:13px;padding:26px 0}.error{color:#b91c1c!important}
 @media(max-width:700px){.grid{grid-template-columns:1fr}.wrap{margin:22px auto}.panel{padding:18px}#status{width:100%;margin-left:0}}
 </style></head><body><main class="wrap">
-<header><div><h1>Code Annotations</h1><div class="subtitle">Python 函数 / 类调用关系 · 本地注释管理</div></div><span class="pill">Local Workspace</span></header>
+<header><div><h1>Code Annotations</h1><div class="subtitle">Python 函数 / 类调用关系 · 本地注释管理</div></div><a href="/tree" style="color:#1d4ed8;font-weight:650">项目调用树 →</a><span class="pill">Local Workspace</span></header>
 <section class="panel"><h2>分析范围</h2>
 <div class="grid"><div><label for="root">项目根目录 · 用于分析完整调用关系</label><input id="root" placeholder="D:\project"><div class="hint">扫描该目录下所有 Python 模块，建立双向调用索引</div></div>
 <div><label for="target">目标文件或目录 · 实际修改范围</label><input id="target" placeholder="D:\project\utils.py"><div class="hint">必须位于根目录内；可填写单个 .py 文件或子目录</div></div></div>
@@ -121,10 +122,11 @@ def run_operation(payload: dict) -> dict:
 
 class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
-        if urlparse(self.path).path != "/":
+        route = urlparse(self.path).path
+        if route not in ("/", "/tree"):
             self.send_error(404)
             return
-        data = _PAGE.encode("utf-8")
+        data = (_PAGE if route == "/" else TREE_PAGE).encode("utf-8")
         self.send_response(200)
         self.send_header("Content-Type", "text/html; charset=utf-8")
         self.send_header("Content-Length", str(len(data)))
@@ -132,7 +134,7 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(data)
 
     def do_POST(self):
-        if urlparse(self.path).path != "/api/run":
+        if urlparse(self.path).path not in ("/api/run", "/api/tree"):
             self.send_error(404)
             return
         try:
@@ -147,7 +149,8 @@ class Handler(BaseHTTPRequestHandler):
             payload = json.loads(self.rfile.read(size))
             if not isinstance(payload, dict):
                 raise ValueError("请求格式不合法")
-            result = run_operation(payload)
+            result = (tree_operation(payload) if urlparse(self.path).path == "/api/tree"
+                      else run_operation(payload))
             code = 200
         except (ValueError, OSError, SyntaxError, RuntimeError, UnicodeError) as exc:
             result, code = {"error": str(exc)}, 400
