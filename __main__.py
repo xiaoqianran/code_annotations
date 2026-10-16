@@ -4,7 +4,7 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 from .analyzer import Index
-from .editor import edit, diff, write
+from .editor import edit, diff, apply_batch
 
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description="Generate and reversibly remove Python call annotations")
@@ -22,6 +22,7 @@ def main(argv=None) -> int:
     paths = ([target] if target.is_file() else sorted(path for path in index.by_file if path.is_relative_to(target)))
     mode = "remove" if args.command == "remove" else "write"
     changed = 0
+    changes = []
     for path in paths:
         if path.suffix != ".py" or path.resolve() not in index.by_file:
             continue
@@ -32,7 +33,10 @@ def main(argv=None) -> int:
         if args.command in ("inspect", "check"):
             print(diff(path, before, after))
         else:
-            write(path, before, after)
+            changes.append((path, before, after))
+    if changes:
+        apply_batch(changes)
+        for path, _, _ in changes:
             print(f"Updated: {path}")
     print(f"{changed} file(s) {'out of date' if args.command=='check' else 'changed or would change'}")
     return 1 if args.command == "check" and changed else 0

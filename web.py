@@ -10,7 +10,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 from .analyzer import Index
-from .editor import diff, edit, write
+from .editor import diff, edit, apply_batch
 
 _PAGE = r"""<!doctype html>
 <html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -110,8 +110,7 @@ def run_operation(payload: dict) -> dict:
             codec = "utf-8-sig" if raw.startswith(b"\xef\xbb\xbf") else "utf-8"
             if raw.decode(codec) != before:
                 raise RuntimeError(f"分析期间文件已变更：{path}")
-        for path, before, after in modifications:
-            write(path, before, after)
+        apply_batch(modifications)
     return {
         "scanned": len(paths),
         "changed": len(modifications),
