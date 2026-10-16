@@ -1,0 +1,17 @@
+# <type>(<scope>): <subject>
+#
+# 示例：
+# feat(web): 新增本地网页调用关系预览
+# fix(editor): 修复注释移除时的歧义检测
+# docs(readme): 补充项目使用说明
+# refactor(analyzer): 简化调用关系分析逻辑
+# perf(analyzer): 缓存模块解析结果
+# test(editor): 覆盖写入移除幂等性
+# build: 调整启动脚本和依赖配置
+# chore: 清理临时文件
+# revert: 回滚错误的注释生成逻辑
+# style: 统一代码格式
+#
+# 首行建议不超过 72 字符；使用祈使语气。
+# type：feat / fix / docs / refactor / perf / test / build / chore / revert / style
+# scope 可选，正文可说明改动原因和验证结果。
